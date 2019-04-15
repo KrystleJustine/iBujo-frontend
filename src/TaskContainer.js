@@ -85,7 +85,8 @@ filtered = (e) => {
    render() {
        console.log(this.state.tasks, "Tasks sent down")
         const filteredTask = this.state.tasks.filter(task=> {
-           return task.title.includes(this.state.searchTerm)
+            // forces comparison to both be lowercase for more wide
+           return task.title.toLowerCase().includes(this.state.searchTerm.toLowerCase())
         });
        return (
            <div className="TaskContainer">
