@@ -31,3 +31,21 @@
     transform: rotate(360deg);
   }
 }
+
+.ui-massive-icon-input{
+  text-align: center;
+}
+
+#cardSetup{
+  display: flex; flex-wrap: wrap;
+}
+
+.TaskFilter{
+grid-column: span 2;
+}
+
+.TaskContainer{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 10% 10% 10% 70%;
+}

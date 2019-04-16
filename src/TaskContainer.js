@@ -2,31 +2,38 @@ import React, { Component } from 'react';
 import TaskList from './TaskList';
 import TaskForm from './TaskForm';
 import Search from './Search';
+import TaskFilter from './TaskFilter'
 
 
 export default class TaskContainer extends Component {
-    ////////////////////////////////////// INITIALIZES STATE ///////////////////////////////////////
+////////////////////////////////////// INITIALIZES STATE ///////////////////////////////////////
     state = {
         tasks : [],
         // sets up show status as an empty array
-        searchTerm : ''
+        searchTerm : '',
+        statusTerm: '',
+        filteredTasks : ''
+
+
     };
 
 
-    ////////////////////////////////// PULLS TASKS FROM BACKEND /////////////////////////////////////
+////////////////////////////////// PULLS TASKS FROM BACKEND /////////////////////////////////////
     componentDidMount(){
         fetch('http://localhost:3007/tasks')
             .then(resp=> resp.json())
             .then(respJSON => {
+                const arr = respJSON.reverse();
                     this.setState({
-                        tasks : respJSON
+                        tasks : arr
                     })
                 }
             )
     }
 
+    // when a user adds a new task from form
     handleSubmit = (event, taskObj) => {
-        event.preventDefault();
+       event.preventDefault();
         fetch ('http://localhost:3007/tasks', {
             method: 'POST',
             headers: {
@@ -39,70 +46,82 @@ export default class TaskContainer extends Component {
                 const newSetOfTasks = [taskObj, ...this.state.tasks];
                 this.setState({
                     tasks: newSetOfTasks
-                })
+                }, console.log (this.state.tasks))
             });
         // update state with new task... make a new array with
         // task info... add new task object to the top of the list
 
     };
 
-    handleSearchChange = (e) => {
-        this.setState({
-            "searchTerm": e.target.value
-        })
-    };
+// when a user types in a letter in the search bar, search term updates with every key stroke
+handleSearchChange = (e) => {
+    this.setState({
+        "searchTerm": e.target.value
+    })
+};
 
+
+// removes the task on the front end
 handleDelete = (taskToRemove) => {
     const updatedTaskArray = this.state.tasks.filter(task => task.id !== taskToRemove.id);
     this.setState({
         tasks : updatedTaskArray
         }, () => this.handleDeleteBackEnd(taskToRemove));
 };
-
+// removes the task off the back end to persist when page reloads
 handleDeleteBackEnd = (taskToDelete) => {
     fetch(`http://localhost:3007/tasks/${taskToDelete.id}`, {method : 'DELETE'})
 };
 
 
-
-filtered = (e) => {
+// when a user clicks ta status from the drop down menu, it should show that category of status
+filteredStatus = (e) => {
+    console.log("this is the value of status when clicked", e.target.value);
+    // if the user chooses "All" return the whole list of tasks
     if(e.target.value === "All") {
         this.setState({
-            filterTasks: this.state.tasks
+            filteredTasks : this.state.tasks,
+            statusTerm: e.target.value
         })
     }else {
-            let selectedStatus = this.state.tasks.find(task =>{
+        // filter each status by the category of what was clicked
+            let selectedStatus = this.state.tasks.filter(task =>{
                 return task.status === e.target.value
             });
         this.setState({
-            filteredTasks : selectedStatus
+            filteredTasks : selectedStatus,
+            statusTerm: e.target.value
         })
-
     }
 };
 
 
-   render() {
-       console.log(this.state.tasks, "Tasks sent down")
-        const filteredTask = this.state.tasks.filter(task=> {
-            // forces comparison to both be lowercase for more wide
-           return task.title.toLowerCase().includes(this.state.searchTerm.toLowerCase())
-        });
-       return (
-           <div className="TaskContainer">
-               <Search handleSearchChange={this.handleSearchChange} searchTerm={this.state.searchTerm}/>
-               <TaskForm handleSubmit={this.state.handleSubmit} handleAdd={this.handleAdd}/>
-               <TaskList tasks={filteredTask} handleDelete={this.handleDelete} />
+combineFilters = () => {
+    let taskList = [...this.state.tasks];
 
-           </div>
-       )
+    if (this.state.searchTerm.length > 0) {
+        // forces comparison to both be lowercase for more wide
+        taskList = taskList.filter(task=>
+            task.title.toLowerCase().includes(this.state.searchTerm.toLowerCase())
+        );
+    }
 
-   }
+    if (this.state.statusTerm.length > 0) {
+        taskList = taskList.filter(task => task.status === this.state.statusTerm || this.state.statusTerm === 'All');
+    }
 
+    return taskList
 };
 
-//tasks={this.state.tasks} handleClick={this.handleClick} handleSubmit={this.handleSubmit}
-
-// const taskCards = filteredTasks.map(task => {
-//     return <TaskCard key={task.id} title={task.title} />
-// });
+   render() {
+        let filteredTaskList = this.combineFilters();
+        return (
+           <div className="TaskContainer">
+               <TaskFilter filteredStatus={this.filteredStatus} handleClick={this.handleClick}/>
+               <Search handleSearchChange={this.handleSearchChange} searchTerm={this.state.searchTerm}/>
+               <TaskForm handleSubmit={this.handleSubmit}/>
+               <TaskList tasks={filteredTaskList}  handleDelete={this.handleDelete} />
+           </div>
+       )
+    }
+};
